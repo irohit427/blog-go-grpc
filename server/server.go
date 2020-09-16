@@ -23,6 +23,15 @@ var collection *mongo.Collection
 type server struct {
 }
 
+func dataToBlog(data *blogEntity) *blog_pb.Blog {
+	return &blog_pb.Blog{
+		Id:       data.ID.Hex(),
+		AuthorId: data.AuthorID,
+		Title:    data.Title,
+		Content:  data.Content,
+	}
+}
+
 func (*server) CreateBlog(ctx context.Context, req *blog_pb.CreateBlogRequest) (*blog_pb.CreateBlogResponse, error) {
 	blog := req.GetBlog()
 	data := blogEntity{
@@ -64,12 +73,36 @@ func (*server) ReadBlog(ctx context.Context, in *blog_pb.ReadBlogRequest) (*blog
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Blog not found"))
 	}
 	return &blog_pb.ReadBlogResponse{
-		Blog: &blog_pb.Blog{
-			Id:       data.ID.Hex(),
-			AuthorId: data.AuthorID,
-			Title:    data.Title,
-			Content:  data.Content,
-		},
+		Blog: dataToBlog(data),
+	}, nil
+}
+
+func (*server) UpdateBlog(ctx context.Context, in *blog_pb.UpdateBlogRequest) (*blog_pb.UpdateBlogResponse, error) {
+	fmt.Println("Update Blog Request")
+	blog := in.GetBlog()
+	oid, err := primitive.ObjectIDFromHex((blog.GetId()))
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Cannot parse ID"))
+	}
+
+	data := &blogEntity{}
+	filter := bson.D{{"_id", oid}}
+	res := collection.FindOne(context.Background(), filter)
+	if err := res.Decode(data); err != nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Blog not found"))
+	}
+
+	data.AuthorID = blog.GetAuthorId()
+	data.Title = blog.GetTitle()
+	data.Content = blog.GetContent()
+
+	_, err = collection.ReplaceOne(context.Background(), filter, data)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Cannot update object: %v", err))
+	}
+
+	return &blog_pb.UpdateBlogResponse{
+		Blog: dataToBlog(data),
 	}, nil
 }
 
