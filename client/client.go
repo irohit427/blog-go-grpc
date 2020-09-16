@@ -36,7 +36,7 @@ func main() {
 
 	fmt.Println("Blog : %v", res)
 
-	// // read Blog
+	// read Blog
 	res2, err := c.ReadBlog(context.Background(), &blog_pb.ReadBlogRequest{BlogId: "5f611acf6048a75681eb10df"})
 	if err != nil {
 		fmt.Printf("Err happened while reading: %v", err)
@@ -56,4 +56,11 @@ func main() {
 		fmt.Printf("Unable to update blog, Something went wrong: %v", err)
 	}
 	fmt.Println("Updated Blog:", updateRes)
+
+	// Delete Blog
+	deleteRes, err := c.DeleteBlog(context.Background(), &blog_pb.DeleteBlogRequest{BlogId: "5f6264f5bea6d910a9eccf68"})
+	if err != nil {
+		fmt.Printf("Unable to delete blog, Something went wrong: %v", err)
+	}
+	fmt.Println("Deleted Blog:", deleteRes)
 }

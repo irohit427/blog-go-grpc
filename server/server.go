@@ -106,6 +106,28 @@ func (*server) UpdateBlog(ctx context.Context, in *blog_pb.UpdateBlogRequest) (*
 	}, nil
 }
 
+func (*server) DeleteBlog(ctx context.Context, in *blog_pb.DeleteBlogRequest) (*blog_pb.DeleteBlogResponse, error) {
+	id := in.GetBlogId()
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Cannot parse ID"))
+	}
+
+	filter := bson.D{{"_id", oid}}
+	res, err := collection.DeleteOne(context.Background(), filter)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Something went wrong. Unable to delete document"))
+	}
+
+	if res.DeletedCount == 0 {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Document Not Found"))
+	}
+
+	return &blog_pb.DeleteBlogResponse{
+		BlogId: id,
+	}, nil
+}
+
 type blogEntity struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty"`
 	AuthorID string             `bson:"author_id"`
